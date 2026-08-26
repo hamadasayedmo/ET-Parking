@@ -1,0 +1,91 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<div id="content-main">
+  <h1>{{ title }}</h1>
+  <p>
+    <strong>Plate:</strong> {{ access_request.plate }}
+    &nbsp;|&nbsp;
+    <strong>Device:</strong> {{ access_request.device }}
+    &nbsp;|&nbsp;
+    <strong>Site:</strong> {{ access_request.device.site.name }}
+    &nbsp;|&nbsp;
+    <strong>Action:</strong> {{ access_request.get_action_display }}
+  </p>
+  {% if access_request.reason %}
+  <p><strong>System reason:</strong> {{ access_request.reason }}</p>
+  {% endif %}
+  {% if needs_entry_time %}
+  <p class="errornote" style="background:#fff3cd;border-color:#ffc107;color:#664d03;">
+    No open session found for this plate at this site. Provide the entry time below
+    (unless you mark the request as exempted) so a session can be created and billed.
+  </p>
+  {% endif %}
+
+  <form method="post" id="decide-form">
+    {% csrf_token %}
+    <fieldset class="module aligned">
+      <div class="form-row">
+        <div>
+          <label for="id_decision_note">Note (optional):</label>
+          <textarea name="decision_note" id="id_decision_note" rows="4" cols="60">{{ decision_note }}</textarea>
+        </div>
+      </div>
+      {% if action == "approve" %}
+      <div class="form-row">
+        <div>
+          <label for="id_exempted">
+            <input type="checkbox" name="exempted" id="id_exempted" {% if exempted %}checked{% endif %} />
+            Exempted — no wallet withdrawal for this session
+          </label>
+          <p class="help">
+            If unchecked, approving allows the parking fee to drive the wallet balance negative.
+          </p>
+        </div>
+      </div>
+      {% if needs_entry_time %}
+      <div class="form-row" id="entry-time-row">
+        <div>
+          <label for="id_entry_time">Entry time:</label>
+          <input
+            type="datetime-local"
+            name="entry_time"
+            id="id_entry_time"
+            value="{{ entry_time }}"
+            step="60"
+          />
+          <p class="help">
+            Required when not exempted. Used to start a session and calculate the parking fee.
+          </p>
+        </div>
+      </div>
+      {% endif %}
+      {% endif %}
+    </fieldset>
+    <div class="submit-row">
+      {% if action == "approve" %}
+      <input type="submit" value="Confirm approve" class="default" />
+      {% else %}
+      <input type="submit" value="Confirm deny" class="default" style="background:#ba2121;" />
+      {% endif %}
+      <a href="{% url 'admin:parking_accessrequest_changelist' %}" class="button cancel-link">Cancel</a>
+    </div>
+  </form>
+</div>
+{% if needs_entry_time and action == "approve" %}
+<script>
+(function () {
+  var exempted = document.getElementById("id_exempted");
+  var entryTime = document.getElementById("id_entry_time");
+  if (!exempted || !entryTime) return;
+  function sync() {
+    entryTime.required = !exempted.checked;
+    entryTime.disabled = exempted.checked;
+  }
+  exempted.addEventListener("change", sync);
+  sync();
+})();
+</script>
+{% endif %}
+{% endblock %}
