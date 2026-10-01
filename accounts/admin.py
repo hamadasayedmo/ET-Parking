@@ -95,7 +95,7 @@ class StaffProfileAdmin(admin.ModelAdmin):
             return "—"
         return obj.projects.count()
 
-
+# Add New comment to explain the CashierAdmin class
 @admin.register(Cashier)
 class CashierAdmin(admin.ModelAdmin):
     list_display = ("id", "user", "zone", "site_name", "created_at")
